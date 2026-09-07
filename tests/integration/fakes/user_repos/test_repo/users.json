@@ -1,0 +1,16 @@
+[
+    {
+        "id": "00000000-0000-0000-0000-000000000001",
+        "username": "user_one",
+        "email": "user_one@test.com",
+        "password_hash": "hash_one",
+        "created_at": "2024-01-01T00:00:00"
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000002",
+        "username": "user_two",
+        "email": "user_two@test.com",
+        "password_hash": "hash_two",
+        "created_at": "2024-01-02T00:00:00"
+    }
+]

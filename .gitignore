@@ -7,9 +7,8 @@ __pycache__/
 # --- Build --- #
 dist/
 
-# --- Created by VSCode --- #
-settings.json
-.vscode
+# --- VSCode snippets --- #
+.vscode/*.code-snippets
 
 # --- tests ---
 .pytest_cache

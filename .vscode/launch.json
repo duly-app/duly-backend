@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flask",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "src.app",
+                "FLASK_DEBUG": "1",
+                "FLASK_RUN_PORT": "5001",
+                "REGISTRATION_CODE": "registration_code",
+                "SECRET_KEY": "secret_key",
+                "POSTGRES_USER": "admin",
+                "POSTGRES_PASSWORD": "password",
+                "POSTGRES_DB": "duly_postgres",
+                "DATABASE_URL": "postgresql+psycopg2://admin:password@localhost:5432/duly_postgres"
+            },
+            "args": [
+                "run",
+                "--no-debugger",
+                "--no-reload"
+            ],
+            "autoStartBrowser": false,
+        }
+    ]
+}
