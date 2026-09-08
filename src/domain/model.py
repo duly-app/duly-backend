@@ -22,6 +22,9 @@ class Username:
         if not self.value or not self.value.strip():
             raise InvalidUsernameError("Username cannot be empty")
 
+    def __str__(self) -> str:
+        return self.value
+
 
 @dataclass(frozen=True)
 class Email:
@@ -30,6 +33,9 @@ class Email:
     def __post_init__(self):
         if not EMAIL_REGEX.match(self.value):
             raise InvalidEmailError(f"Invalid email address: {self.value}")
+
+    def __str__(self) -> str:
+        return self.value
 
 
 @dataclass(frozen=True)

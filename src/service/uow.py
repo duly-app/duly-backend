@@ -6,7 +6,7 @@ from typing import Callable, Self, TypeAlias
 
 from sqlalchemy.orm import sessionmaker
 
-from src.adapters.user_repo import AbstractUserRepository, SQLAlchemyUserRepository
+from src.adapters.repository import AbstractUserRepository, SQLAlchemyUserRepository
 
 UOWFactory: TypeAlias = Callable[[], "AbstractUOW"]
 
@@ -22,11 +22,11 @@ class AbstractUOW(AbstractContextManager, ABC):
 
     @abstractmethod
     def commit(self) -> None:
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     def rollback(self) -> None:
-        raise NotImplementedError
+        pass
 
 
 class SQLAlchemyUOW(AbstractUOW):
