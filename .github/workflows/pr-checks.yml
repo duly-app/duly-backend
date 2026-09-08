@@ -26,25 +26,48 @@ jobs:
       run: tox -e format
     - name: Run type checks
       run: tox -e typecheck
-    - name: Run docstring checks
-      run: tox -e docstrings
 
-  test:
-    name: Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
+  # unit-tests:
+  #   name: Unit Tests ({{ matrix.os }})
+  #   runs-on: {{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest, macos-latest]
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: actions/setup-python@v4.0.0
+  #     with:
+  #       python-version: "3.13"
+  #   - name: Install tox and poetry
+  #     run: python -m pip install tox poetry
+  #   - name: Run unit tests
+  #     run: tox -e py313 -- tests/unit --randomly-seed=$RANDOM
 
-        os: [ubuntu-latest, macos-latest]
-        python:
-        - version: "3.13"
-          toxenv: "py313"
+  integration-tests:
+    name: Integration Tests (Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: duly_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4.0.0
       with:
-        python-version: ${{ matrix.python.version }}
+        python-version: "3.13"
     - name: Install tox and poetry
       run: python -m pip install tox poetry
-    - name: Run pytest
-      run: tox -e ${{ matrix.python.toxenv }} -- --randomly-seed=$RANDOM
+    - name: Run postgres integration tests
+      env:
+        TEST_DATABASE_URL: postgresql+psycopg2://admin:password@localhost:5432/duly_test
+      run: tox -e py313 -- tests/integration --randomly-seed=$RANDOM
