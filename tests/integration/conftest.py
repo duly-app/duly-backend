@@ -2,7 +2,7 @@ from typing import Protocol
 
 import pytest
 
-from src.adapters.user_repo import AbstractUserRepository
+from src.adapters.repository import AbstractUserRepository
 from src.service.uow import AbstractUOW
 from tests.integration.fakes.fake_uow import FakeUOW
 from tests.integration.fakes.fake_user_repo import FakeUserRepository

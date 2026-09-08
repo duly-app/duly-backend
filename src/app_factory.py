@@ -29,9 +29,16 @@ def create_app(config: dict | None = None) -> Flask:
 
     register_error_handlers(app)
 
-    uow_factory = bootstrap(config)
+    deps = bootstrap(config)
 
     app.register_blueprint(main_bp, url_prefix="/api")
-    app.register_blueprint(create_auth_bp(uow_factory=uow_factory), url_prefix="/api")
+    app.register_blueprint(
+        create_auth_bp(
+            uow_factory=deps.uow_factory,
+            password_service=deps.password_service,
+            token_service=deps.token_service,
+        ),
+        url_prefix="/api",
+    )
 
     return app
