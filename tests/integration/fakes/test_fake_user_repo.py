@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from src.domain.model import Email, Username
+from src.domain.user import Email, Username
 from tests.integration.conftest import UserRepoFactory
 
 

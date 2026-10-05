@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.domain.model import Email, NewUser, User, UserID, Username
+from src.domain.user import Email, NewUser, User, UserID, Username
 
 
 class AbstractUserRepository(ABC):

@@ -1,0 +1,75 @@
+[
+    {
+        "id": "e0000000-0000-0000-0000-000000000001",
+        "note_id": "70000000-0000-0000-0000-000000000001",
+        "event_type": "created",
+        "timestamp": "2024-03-01T09:00:00+00:00",
+        "author_id": "00000000-0000-0000-0000-000000000001",
+        "author_type": "user",
+        "payload": {
+            "title": "Shopping list",
+            "content": "Milk, bread, coffee",
+            "owner": "00000000-0000-0000-0000-000000000001"
+        }
+    },
+    {
+        "id": "e0000000-0000-0000-0000-000000000002",
+        "note_id": "70000000-0000-0000-0000-000000000002",
+        "event_type": "created",
+        "timestamp": "2024-03-02T09:00:00+00:00",
+        "author_id": "00000000-0000-0000-0000-000000000001",
+        "author_type": "user",
+        "payload": {
+            "title": "Reading list",
+            "content": "Domain-Driven Design",
+            "owner": "00000000-0000-0000-0000-000000000001"
+        }
+    },
+    {
+        "id": "e0000000-0000-0000-0000-000000000003",
+        "note_id": "70000000-0000-0000-0000-000000000002",
+        "event_type": "updated",
+        "timestamp": "2024-03-03T09:00:00+00:00",
+        "author_id": "00000000-0000-0000-0000-000000000001",
+        "author_type": "ai",
+        "payload": {
+            "title": "Reading list",
+            "content": "Domain-Driven Design, Architecture Patterns with Python"
+        }
+    },
+    {
+        "id": "e0000000-0000-0000-0000-000000000004",
+        "note_id": "70000000-0000-0000-0000-000000000003",
+        "event_type": "created",
+        "timestamp": "2024-03-04T09:00:00+00:00",
+        "author_id": "00000000-0000-0000-0000-000000000002",
+        "author_type": "user",
+        "payload": {
+            "title": "Gym plan",
+            "content": "Squats, deadlifts",
+            "owner": "00000000-0000-0000-0000-000000000002"
+        }
+    },
+    {
+        "id": "e0000000-0000-0000-0000-000000000005",
+        "note_id": "70000000-0000-0000-0000-000000000004",
+        "event_type": "created",
+        "timestamp": "2024-03-05T09:00:00+00:00",
+        "author_id": "00000000-0000-0000-0000-000000000002",
+        "author_type": "user",
+        "payload": {
+            "title": "Scratch note",
+            "content": "To be deleted",
+            "owner": "00000000-0000-0000-0000-000000000002"
+        }
+    },
+    {
+        "id": "e0000000-0000-0000-0000-000000000006",
+        "note_id": "70000000-0000-0000-0000-000000000004",
+        "event_type": "deleted",
+        "timestamp": "2024-03-06T09:00:00+00:00",
+        "author_id": "00000000-0000-0000-0000-000000000002",
+        "author_type": "user",
+        "payload": {}
+    }
+]

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.domain.model import Email, NewUser, Username
+from src.domain.user import Email, NewUser, Username
 from src.service.uow import SQLAlchemyUOW
 
 

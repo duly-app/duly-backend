@@ -1,7 +1,7 @@
 from typing import Optional
 
 from src.adapters import AbstractUserRepository
-from src.domain.model import Email, NewUser, User, UserID, Username
+from src.domain.user import Email, NewUser, User, UserID, Username
 
 
 class FakeUserRepository(AbstractUserRepository):
