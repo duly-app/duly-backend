@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from src.adapters.orm import metadata
-from src.environment import EnvVar, load_env_vars
+from src.environment import EnvVar, load_env_vars, verify_env_vars
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -17,9 +17,10 @@ if config.config_file_name is not None:
 
 target_metadata = metadata
 
-database_url = load_env_vars()[EnvVar.DATABASE_URL]
-if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
+env_vars = load_env_vars()
+verify_env_vars(env_vars, required=(EnvVar.DATABASE_URL,))
+
+config.set_main_option("sqlalchemy.url", env_vars[EnvVar.DATABASE_URL])
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
