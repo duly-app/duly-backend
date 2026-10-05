@@ -4,8 +4,9 @@ from flask_cors import CORS
 from src.api.routes import main_bp
 from src.api.routes.auth import create_auth_bp
 from src.api.routes.errors import internal_server_error, page_not_found
+from src.api.routes.health import create_health_route, create_readiness_route
 from src.bootstrap import bootstrap
-from src.domain.exceptions import InvalidEmailError, InvalidUsernameError
+from src.domain.user_errors import InvalidEmailError, InvalidUsernameError
 from src.environment import verify_env_vars
 
 
@@ -40,5 +41,7 @@ def create_app(config: dict | None = None) -> Flask:
         ),
         url_prefix="/api",
     )
+    create_health_route(app)
+    create_readiness_route(app, deps.uow_factory())
 
     return app

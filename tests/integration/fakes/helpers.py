@@ -3,14 +3,16 @@ from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
-from src.domain.model import Email, User, Username
+from src.adapters.repository.sqlalchemy_notes_event_store import event_from_dict
+from src.domain.notes import NoteEvent
 from src.domain.roles import Role
+from src.domain.user import Email, User, Username
 
 CURRENT_FILE = Path(__file__)
-USER_REPOS = CURRENT_FILE.parent / "user_repos"
+DATABASES = CURRENT_FILE.parent / "databases"
 
 
-assert USER_REPOS.exists(), f"Directory {USER_REPOS!s} does not exist"
+assert DATABASES.exists(), f"Directory {DATABASES!s} does not exist"
 
 
 def parse_users_json(json_path: Path) -> list[User]:
@@ -31,7 +33,31 @@ def parse_users_json(json_path: Path) -> list[User]:
     ]
 
 
-def get_users(repo_name: str) -> list[User]:
-    repo_path = USER_REPOS / repo_name
+def parse_note_events_json(json_path: Path) -> list[NoteEvent]:
+    with open(json_path) as f:
+        records = json.load(f)
 
-    return parse_users_json(repo_path / "users.json")
+    return [
+        event_from_dict(
+            {
+                **r,
+                "id": UUID(r["id"]),
+                "note_id": UUID(r["note_id"]),
+                "author_id": UUID(r["author_id"]),
+                "timestamp": datetime.fromisoformat(r["timestamp"]),
+            }
+        )
+        for r in records
+    ]
+
+
+def get_users(db_name: str) -> list[User]:
+    return parse_users_json(DATABASES / db_name / "users.json")
+
+
+def get_note_events(db_name: str) -> list[NoteEvent]:
+    return parse_note_events_json(DATABASES / db_name / "note_events.json")
+
+
+def parse_db(db_name: str) -> tuple[list[User], list[NoteEvent]]:
+    return get_users(db_name), get_note_events(db_name)

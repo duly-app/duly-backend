@@ -1,7 +1,34 @@
+from abc import ABC, abstractmethod
+
 from sqlalchemy.orm import Session
 
-from src.adapters.repository.user_repo import AbstractUserRepository
 from src.domain.user import Email, NewUser, User, UserID, Username
+
+
+class AbstractUserRepository(ABC):
+    @abstractmethod
+    def get(self, offset: int = 0, limit: int = 100) -> list[User]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def create(self, user: NewUser) -> User:
+        raise NotImplementedError
+
+    @abstractmethod
+    def delete(self, user: UserID) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_by_id(self, user_id: UserID) -> User | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_by_email(self, email: Email) -> User | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_by_username(self, username: Username) -> User | None:
+        raise NotImplementedError
 
 
 class SQLAlchemyUserRepository(AbstractUserRepository):

@@ -1,5 +1,3 @@
-import logging
-
 from sqlalchemy import (
     Boolean,
     Column,
@@ -7,22 +5,15 @@ from sqlalchemy import (
     Dialect,
     ForeignKey,
     Integer,
-    MetaData,
     String,
     Table,
     Uuid,
+    types,
 )
-from sqlalchemy import inspect as sa_inspect
-from sqlalchemy import types
-from sqlalchemy.orm import registry
 
-from src.domain import User
-from src.domain.model import Email, Username
+from src.adapters.orm.base import metadata
 from src.domain.roles import Role
-
-mapper_registry = registry()
-
-metadata = MetaData()
+from src.domain.user import Email, Username
 
 
 class RoleType(types.TypeDecorator[Role]):
@@ -99,16 +90,3 @@ user_table = Table(
     Column("verified", Boolean, nullable=False, default=False),
     Column("role_id", RoleType, ForeignKey("roles.id"), nullable=False),
 )
-
-
-def start_mappers():
-    if sa_inspect(User, raiseerr=False) is not None:
-        return
-
-    try:
-        mapper_registry.map_imperatively(
-            User, user_table, properties={"role": user_table.c.role_id}
-        )
-    except Exception as e:
-        logging.error(f"Error while starting mappers: {e}")
-        raise

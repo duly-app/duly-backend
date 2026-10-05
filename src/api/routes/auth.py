@@ -5,7 +5,7 @@ from flask.typing import ResponseReturnValue
 
 from src.adapters.security.password_service import PasswordService
 from src.adapters.security.token_service import AbstractTokenService
-from src.domain.model import Email, NewUser, UserID, Username
+from src.domain.user import Email, NewUser, UserID, Username
 from src.service.uow import UOWFactory
 
 

@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 from typing import TypeAlias
 from uuid import UUID, uuid4
 
-from src.domain.exceptions import InvalidEmailError, InvalidUsernameError
 from src.domain.roles import Role
+from src.domain.user_errors import InvalidEmailError, InvalidUsernameError
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
