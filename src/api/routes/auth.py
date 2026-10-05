@@ -1,12 +1,17 @@
 from typing import TypedDict
 
-from flask import Blueprint, current_app, request
+from flask import Blueprint, Response, current_app, jsonify, request
 from flask.typing import ResponseReturnValue
 
+from src.adapters.security.jwt_token_service import REFRESH_TOKEN_LIFETIME
 from src.adapters.security.password_service import PasswordService
-from src.adapters.security.token_service import AbstractTokenService
+from src.adapters.security.token_service import AbstractTokenService, TokenType
 from src.domain.user import Email, NewUser, UserID, Username
 from src.service.uow import UOWFactory
+
+REFRESH_COOKIE = "refresh_token"
+
+REFRESH_COOKIE_PATH = "/api/refresh"
 
 
 class LoginData(TypedDict):
@@ -19,6 +24,27 @@ class RegistrationData(TypedDict):
     email: str
     password: str
     registration_code: str
+
+
+def start_session(
+    token_service: AbstractTokenService, user_id: str, message: str
+) -> Response:
+    """Hand back an access token in the body and a refresh token in a cookie."""
+    access_token = token_service.create_access_token(user_id)
+    response = jsonify({"message": message, "token": access_token})
+
+    response.set_cookie(
+        REFRESH_COOKIE,
+        token_service.create_refresh_token(user_id),
+        max_age=int(REFRESH_TOKEN_LIFETIME.total_seconds()),
+        httponly=True,
+        # Browsers reject Secure cookies over plain http, so localhost needs it off.
+        secure=current_app.config.get("FLASK_DEBUG") != "1",
+        samesite="Lax",
+        path=REFRESH_COOKIE_PATH,
+    )
+
+    return response
 
 
 def create_auth_bp(
@@ -44,9 +70,9 @@ def create_auth_bp(
             ):
                 return {"message": "Invalid credentials"}, 401
 
-            access_token = token_service.create_access_token(str(user.id))
+            user_id = str(user.id)
 
-        return {"message": "Login successful", "token": access_token}, 200
+        return start_session(token_service, user_id, "Login successful")
 
     @bp.route("/signup", methods=["POST"])
     def signup() -> ResponseReturnValue:
@@ -67,11 +93,11 @@ def create_auth_bp(
             email_in_use = user_repo.get_by_email(email) is not None
 
             if email_in_use:
-                return {"message": "Email already exists"}, 400
+                return {"message": "Email already exists"}, 409
 
             username_in_use = user_repo.get_by_username(username) is not None
             if username_in_use:
-                return {"message": "Username already exists"}, 400
+                return {"message": "Username already exists"}, 409
 
             new_user = NewUser(
                 email=email,
@@ -86,7 +112,7 @@ def create_auth_bp(
 
     @bp.route("/refresh", methods=["POST"])
     def refresh() -> ResponseReturnValue:
-        token = request.headers.get("Authorization")
+        token = request.cookies.get(REFRESH_COOKIE)
         if not token:
             return {"message": "Unauthorized"}, 401
 
@@ -94,9 +120,19 @@ def create_auth_bp(
         if token_payload is None:
             return {"message": "Unauthorized"}, 401
 
-        access_token = token_service.create_access_token(str(token_payload["sub"]))
+        if token_payload["type"] is not TokenType.REFRESH:
+            return {"message": "Unauthorized"}, 401
 
-        return {"message": "Token refreshed", "token": access_token}, 200
+        return start_session(
+            token_service, str(token_payload["sub"]), "Token refreshed"
+        )
+
+    @bp.route("/logout", methods=["POST"])
+    def logout() -> ResponseReturnValue:
+        response = jsonify({"message": "Logged out"})
+        response.delete_cookie(REFRESH_COOKIE, path=REFRESH_COOKIE_PATH)
+
+        return response
 
     @bp.route("/me", methods=["GET"])
     def me() -> ResponseReturnValue:
@@ -110,10 +146,13 @@ def create_auth_bp(
         if token_payload is None:
             return {"message": "Unauthorized"}, 401
 
+        if token_payload["type"] is not TokenType.ACCESS:
+            return {"message": "Unauthorized"}, 401
+
         with uow_factory() as uow:
             user = uow.users.get_by_id(UserID(token_payload["sub"]))
             if not user:
-                return {"message": "User not found"}, 404
+                return {"message": "Unauthorized"}, 401
 
             return {
                 "id": str(user.id),
