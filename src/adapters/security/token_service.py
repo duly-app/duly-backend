@@ -1,12 +1,19 @@
 import datetime
 from abc import ABC, abstractmethod
+from enum import StrEnum
 from typing import TypedDict
+
+
+class TokenType(StrEnum):
+    ACCESS = "access"
+    REFRESH = "refresh"
 
 
 class TokenPayload(TypedDict):
     sub: str
     iat: datetime.datetime
     exp: datetime.datetime
+    type: TokenType
 
 
 class AbstractTokenService(ABC):
