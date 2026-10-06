@@ -49,9 +49,7 @@ def test_projection_excludes_deleted_notes(create_notes_repo: NotesRepoFactory):
 
     assert [note.title for note in notes] == ["Gym plan"]
 
-    deleted = repo.get_by_id(DELETED_NOTE)
-    assert deleted is not None
-    assert deleted.deleted is True
+    assert repo.get_by_id(DELETED_NOTE) is None
 
 
 def test_saving_a_note_appends_events_and_projects_it(
@@ -89,14 +87,24 @@ def test_deleting_a_note_removes_it_from_the_projection(
     note = repo.get_by_id(SHOPPING_LIST)
     assert note is not None
 
-    note.delete(author_id=USER_ONE)
-    repo.save(note)
+    repo.delete(note, USER_ONE)
 
     assert [n.title for n in repo.get_by_owner(USER_ONE)] == ["Reading list"]
+    assert repo.get_by_id(SHOPPING_LIST) is None
 
-    replayed = repo.get_by_id(SHOPPING_LIST)
-    assert replayed is not None
-    assert replayed.deleted is True
+
+def test_deleting_a_note_keeps_its_history(create_notes_repo: NotesRepoFactory):
+    repo = create_notes_repo("test_repo")
+    note = repo.get_by_id(SHOPPING_LIST)
+    assert note is not None
+
+    repo.delete(note, USER_ONE)
+
+    events = repo._event_store.get_events(SHOPPING_LIST)
+    assert [type(event).__name__ for event in events] == [
+        "NoteCreatedEvent",
+        "NoteDeletedEvent",
+    ]
 
 
 def test_notes_of_other_owners_are_not_returned(create_notes_repo: NotesRepoFactory):

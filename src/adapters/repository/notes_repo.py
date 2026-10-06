@@ -24,7 +24,12 @@ class NotesRepository:
         if not events:
             return None
 
-        return Note.from_events(events)
+        note = Note.from_events(events)
+
+        if note.deleted:
+            return None
+
+        return note
 
     def get_by_owner(self, owner: UserID) -> Sequence[Note]:
         return self._projection.get_by_owner(owner)
@@ -36,3 +41,9 @@ class NotesRepository:
         self._event_store.append(note.events)
         self._projection.upsert(note)
         note.clear_events()
+
+    def delete(self, note: Note, author_id: UserID) -> None:
+        """Soft delete, recorded as an event rather than erased."""
+        note.delete(author_id=author_id)
+
+        self.save(note)

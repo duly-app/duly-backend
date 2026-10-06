@@ -4,15 +4,24 @@ from pathlib import Path
 from uuid import UUID
 
 from src.adapters.repository.sqlalchemy_notes_event_store import event_from_dict
+from src.adapters.security.jwt_token_service import JWTTokenService
 from src.domain.notes import NoteEvent
 from src.domain.roles import Role
-from src.domain.user import Email, User, Username
+from src.domain.user import Email, User, UserID, Username
 
 CURRENT_FILE = Path(__file__)
 DATABASES = CURRENT_FILE.parent / "databases"
 
+TEST_SECRET_KEY = "test-secret-key-at-least-32-characters"
+
 
 assert DATABASES.exists(), f"Directory {DATABASES!s} does not exist"
+
+
+def auth_header(user_id: UserID) -> dict[str, str]:
+    token = JWTTokenService(TEST_SECRET_KEY).create_access_token(str(user_id))
+
+    return {"Authorization": f"Bearer {token}"}
 
 
 def parse_users_json(json_path: Path) -> list[User]:

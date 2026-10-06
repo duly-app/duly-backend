@@ -1,4 +1,5 @@
 from typing import NotRequired, TypedDict
+from uuid import UUID
 
 from flask import Blueprint, g, request
 from flask.typing import ResponseReturnValue
@@ -52,5 +53,55 @@ def create_notes_bp(
             uow.commit()
 
         return serialize_note(note), 201
+
+    @bp.route("/notes/<uuid:note_id>", methods=["PUT"])
+    @require_auth
+    def update_note(note_id: UUID) -> ResponseReturnValue:
+        data: NotesData | None = request.get_json(silent=True)
+
+        if data is None:
+            return {"message": "A JSON body is required"}, 400
+
+        title = data.get("title")
+        content = data.get("content")
+
+        if title is None and content is None:
+            return {"message": "A title or content is required"}, 400
+
+        with uow_factory() as uow:
+            note = uow.notes.get_by_id(note_id)
+
+            if note is None or note.owner != g.user_id:
+                return {"message": "Note not found"}, 404
+
+            new_title = (note.title if title is None else title).strip()
+
+            if not new_title:
+                return {"message": "A title is required"}, 400
+
+            note.update(
+                title=new_title,
+                content=note.content if content is None else content,
+                author_id=g.user_id,
+            )
+
+            uow.notes.save(note)
+            uow.commit()
+
+            return serialize_note(note)
+
+    @bp.route("/notes/<uuid:note_id>", methods=["DELETE"])
+    @require_auth
+    def delete_note(note_id: UUID) -> ResponseReturnValue:
+        with uow_factory() as uow:
+            note = uow.notes.get_by_id(note_id)
+
+            if note is None or note.owner != g.user_id:
+                return {"message": "Note not found"}, 404
+
+            uow.notes.delete(note, g.user_id)
+            uow.commit()
+
+        return "", 204
 
     return bp
