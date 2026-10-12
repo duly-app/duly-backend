@@ -4,7 +4,7 @@ from enum import StrEnum
 
 
 class EnvVar(StrEnum):
-    SECRET_KEY = "SECRET_KEY"
+    SIGNING_KEY = "SIGNING_KEY"
     REGISTRATION_CODE = "REGISTRATION_CODE"
     DATABASE_URL = "DATABASE_URL"
     TEST_DATABASE_URL = "TEST_DATABASE_URL"
@@ -12,7 +12,7 @@ class EnvVar(StrEnum):
 
 
 REQUIRED_ENV_VARS: tuple[EnvVar, ...] = (
-    EnvVar.SECRET_KEY,
+    EnvVar.SIGNING_KEY,
     EnvVar.REGISTRATION_CODE,
     EnvVar.DATABASE_URL,
 )
