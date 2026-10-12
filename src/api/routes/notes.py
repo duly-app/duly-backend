@@ -32,6 +32,17 @@ def create_notes_bp(
 
             return {"notes": [serialize_note(note) for note in notes]}
 
+    @bp.route("/notes/<uuid:note_id>", methods=["GET"])
+    @require_auth
+    def get_note(note_id: UUID) -> ResponseReturnValue:
+        with uow_factory() as uow:
+            note = uow.notes.get_by_id(note_id)
+
+            if note is None or note.owner != g.user_id:
+                return {"message": "Note not found"}, 404
+
+            return serialize_note(note)
+
     @bp.route("/notes", methods=["POST"])
     @require_auth
     def add_note() -> ResponseReturnValue:
