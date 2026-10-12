@@ -21,7 +21,7 @@ def bootstrap(config: dict) -> Dependencies:
     start_mappers()
     uow_factory = get_uow_factory(config)
     password_service = ArgonPasswordService()
-    token_service = JWTTokenService(secret_key=config[EnvVar.SECRET_KEY])
+    token_service = JWTTokenService(secret_key=config[EnvVar.SIGNING_KEY])
 
     return Dependencies(
         uow_factory=uow_factory,
