@@ -15,3 +15,7 @@ class AbstractNoteProjection(ABC):
     @abstractmethod
     def get_by_owner(self, owner: UserID) -> Sequence[Note]:
         """Retrieve every note owned by a user, excluding deleted ones."""
+
+    @abstractmethod
+    def search(self, owner: UserID, query: str, limit: int) -> Sequence[Note]:
+        """A user's notes matching a free-text query, best matches first."""

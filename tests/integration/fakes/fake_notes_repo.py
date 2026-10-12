@@ -46,6 +46,22 @@ class FakeNoteProjection(AbstractNoteProjection):
     def upsert(self, note: Note) -> None:
         self._notes[note.id] = replace(note, _events=[])
 
+    def search(self, owner: UserID, query: str, limit: int) -> Sequence[Note]:
+        """Substring matching, ANDed across words.
+
+        Postgres stems and ranks; this cannot. The AND semantics match
+        websearch_to_tsquery's default, so the shape of a query behaves the
+        same, but results come back by recency rather than relevance.
+        """
+        words = query.lower().split()
+
+        def matches(note: Note) -> bool:
+            haystack = f"{note.title}\n{note.content}".lower()
+
+            return all(word in haystack for word in words)
+
+        return [note for note in self.get_by_owner(owner) if matches(note)][:limit]
+
     def get_by_owner(self, owner: UserID) -> Sequence[Note]:
         return sorted(
             (

@@ -34,6 +34,9 @@ class NotesRepository:
     def get_by_owner(self, owner: UserID) -> Sequence[Note]:
         return self._projection.get_by_owner(owner)
 
+    def search(self, owner: UserID, query: str, limit: int) -> Sequence[Note]:
+        return self._projection.search(owner, query, limit)
+
     def save(self, note: Note) -> None:
         if not note.events:
             return

@@ -2,14 +2,16 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     Column,
+    Computed,
     DateTime,
+    Index,
     Integer,
     String,
     Table,
     Text,
     Uuid,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 
 from src.adapters.orm.base import metadata
 
@@ -40,4 +42,11 @@ note_table = Table(
     Column("owner", Uuid, nullable=False, index=True),
     Column("deleted", Boolean, nullable=False, default=False),
     Column("version", Integer, nullable=False),
+    Column(
+        "search_vector",
+        TSVECTOR,
+        Computed("to_tsvector('english', title || ' ' || content)", persisted=True),
+    ),
 )
+
+Index("ix_notes_search_vector", note_table.c.search_vector, postgresql_using="gin")

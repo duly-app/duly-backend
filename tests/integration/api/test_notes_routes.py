@@ -95,3 +95,51 @@ def test_will_not_read_a_deleted_note(create_client: ClientFactory):
     response = client.get(f"/api/notes/{READING_LIST}", headers=auth_header(USER_ONE))
 
     assert response.status_code == 404
+
+
+def test_search_passes_the_keyword_down_and_returns_the_notes_envelope(
+    create_client: ClientFactory,
+):
+    """The route's part of searching: the query parameter and the response shape.
+
+    Which notes match is the repository's business — here that is a fake doing
+    substring matching, so asserting relevance would only describe the fake.
+    """
+    client = create_client("test_repo")
+
+    response = client.get(
+        "/api/notes/search?keyword=coffee", headers=auth_header(USER_ONE)
+    )
+
+    assert response.status_code == 200
+    assert [note["title"] for note in response.get_json()["notes"]] == ["Shopping list"]
+
+
+def test_search_needs_a_keyword(create_client: ClientFactory):
+    client = create_client("test_repo")
+
+    response = client.get("/api/notes/search", headers=auth_header(USER_ONE))
+
+    assert response.status_code == 400
+
+
+def test_search_is_scoped_to_the_caller(create_client: ClientFactory):
+    """The route searches as g.user_id, never as anything from the request."""
+    client = create_client("test_repo")
+
+    response = client.get(
+        "/api/notes/search?keyword=coffee", headers=auth_header(USER_TWO)
+    )
+
+    assert response.get_json()["notes"] == []
+
+
+def test_search_bounds_its_page_size(create_client: ClientFactory):
+    client = create_client("test_repo")
+
+    response = client.get(
+        "/api/notes/search?keyword=list&limit=1", headers=auth_header(USER_ONE)
+    )
+
+    # Both notes have "list" in the title; the limit is honoured.
+    assert len(response.get_json()["notes"]) == 1

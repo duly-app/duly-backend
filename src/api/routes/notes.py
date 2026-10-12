@@ -10,6 +10,19 @@ from src.api.serializers import serialize_note
 from src.domain.notes import Note
 from src.service.uow import UOWFactory
 
+DEFAULT_SEARCH_LIMIT = 20
+MAX_SEARCH_LIMIT = 50
+
+
+def _limit() -> int:
+    """Bound the caller's page size, so one request cannot ask for everything."""
+    try:
+        requested = int(request.args.get("limit", DEFAULT_SEARCH_LIMIT))
+    except ValueError:
+        return DEFAULT_SEARCH_LIMIT
+
+    return max(1, min(requested, MAX_SEARCH_LIMIT))
+
 
 class NotesData(TypedDict):
     # Both keys may be absent by the caller.
@@ -31,6 +44,21 @@ def create_notes_bp(
             notes = uow.notes.get_by_owner(g.user_id)
 
             return {"notes": [serialize_note(note) for note in notes]}
+
+    @bp.route("/notes/search", methods=["GET"])
+    @require_auth
+    def search_notes() -> ResponseReturnValue:
+        keyword = request.args.get("keyword", "").strip()
+
+        if not keyword:
+            return {"message": "A keyword is required"}, 400
+
+        notes = []
+
+        with uow_factory() as uow:
+            notes = list(uow.notes.search(g.user_id, keyword, _limit()))
+
+        return {"notes": [serialize_note(note) for note in notes]}
 
     @bp.route("/notes/<uuid:note_id>", methods=["GET"])
     @require_auth
