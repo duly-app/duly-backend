@@ -14,7 +14,8 @@ dependencies = [
     "argon2-cffi (>=25.1.0,<26.0.0)",
     "psycopg2-binary (>=2.9.12,<3.0.0)",
     "alembic (>=1.19.1,<2.0.0)",
-    "pyjwt (>=2.13.0,<3.0.0)"
+    "pyjwt (>=2.13.0,<3.0.0)",
+    "prometheus-flask-exporter (>=0.23.2,<0.24.0)"
 ]
 
 

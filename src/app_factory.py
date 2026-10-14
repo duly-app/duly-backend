@@ -1,5 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
+from prometheus_client import CollectorRegistry
+from prometheus_flask_exporter import PrometheusMetrics
 
 from src.api.routes.auth import create_auth_bp
 from src.api.routes.errors import internal_server_error, page_not_found
@@ -20,9 +22,20 @@ def register_error_handlers(app: Flask) -> None:
     app.register_error_handler(500, internal_server_error)
 
 
+def register_metrics(app: Flask) -> None:
+    """Exposes /metrics for Prometheus to scrape.
+
+    group_by is the url_rule rather than the default 'path': the default labels
+    every series with the literal URL, so each note id opened would become its
+    own time series. The rule keeps that to one series per route.
+    """
+    PrometheusMetrics(app, group_by="url_rule", registry=CollectorRegistry())
+
+
 def create_app(config: dict | None = None) -> Flask:
     app = Flask(__name__)
     CORS(app)
+    register_metrics(app)
 
     config = config or {}
     verify_env_vars(config)
