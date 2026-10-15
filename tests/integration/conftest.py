@@ -5,7 +5,8 @@ from flask import Flask
 from flask.testing import FlaskClient
 
 from src.adapters.repository import AbstractUserRepository, NotesRepository
-from src.adapters.security.jwt_token_service import JWTTokenService
+from src.adapters.security.service_token_service import ServiceTokenService
+from src.adapters.security.token_service import TokenService
 from src.api.routes.notes import create_notes_bp
 from src.service.uow import AbstractUOW
 from tests.integration.fakes.fake_notes_repo import create_fake_notes_repo
@@ -13,6 +14,7 @@ from tests.integration.fakes.fake_uow import FakeUOW
 from tests.integration.fakes.fake_user_repo import FakeUserRepository
 from tests.integration.fakes.helpers import (
     TEST_SECRET_KEY,
+    TEST_SERVICE_KEY,
     get_note_events,
     get_users,
     parse_db,
@@ -92,7 +94,8 @@ def create_client() -> ClientFactory:
         app.register_blueprint(
             create_notes_bp(
                 uow_factory=lambda: uow,
-                token_service=JWTTokenService(TEST_SECRET_KEY),
+                token_service=TokenService(TEST_SECRET_KEY),
+                service_token_service=ServiceTokenService(TEST_SERVICE_KEY),
             ),
             url_prefix="/api",
         )

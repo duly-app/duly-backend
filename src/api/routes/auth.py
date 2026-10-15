@@ -3,9 +3,12 @@ from typing import TypedDict
 from flask import Blueprint, Response, current_app, jsonify, request
 from flask.typing import ResponseReturnValue
 
-from src.adapters.security.jwt_token_service import REFRESH_TOKEN_LIFETIME
 from src.adapters.security.password_service import PasswordService
-from src.adapters.security.token_service import AbstractTokenService, TokenType
+from src.adapters.security.token_service import (
+    REFRESH_TOKEN_LIFETIME,
+    TokenService,
+    TokenType,
+)
 from src.domain.user import Email, NewUser, UserID, Username
 from src.service.uow import UOWFactory
 
@@ -26,9 +29,7 @@ class RegistrationData(TypedDict):
     registration_code: str
 
 
-def start_session(
-    token_service: AbstractTokenService, user_id: str, message: str
-) -> Response:
+def start_session(token_service: TokenService, user_id: str, message: str) -> Response:
     """Hand back an access token in the body and a refresh token in a cookie."""
     access_token = token_service.create_access_token(user_id)
     response = jsonify({"message": message, "token": access_token})
@@ -50,7 +51,7 @@ def start_session(
 def create_auth_bp(
     uow_factory: UOWFactory,
     password_service: PasswordService,
-    token_service: AbstractTokenService,
+    token_service: TokenService,
 ) -> Blueprint:
     bp = Blueprint("auth", __name__)
 

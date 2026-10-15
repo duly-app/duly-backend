@@ -1,7 +1,12 @@
+from datetime import timedelta
 from uuid import UUID
 
 from tests.integration.conftest import ClientFactory
-from tests.integration.fakes.helpers import auth_header
+from tests.integration.fakes.helpers import (
+    TEST_SECRET_KEY,
+    auth_header,
+    service_header,
+)
 
 USER_ONE = UUID("00000000-0000-0000-0000-000000000001")
 USER_TWO = UUID("00000000-0000-0000-0000-000000000002")
@@ -143,3 +148,115 @@ def test_search_bounds_its_page_size(create_client: ClientFactory):
 
     # Both notes have "list" in the title; the limit is honoured.
     assert len(response.get_json()["notes"]) == 1
+
+
+def test_a_write_without_a_service_token_is_credited_to_the_user(
+    create_client: ClientFactory,
+):
+    client = create_client("test_repo")
+
+    response = client.post(
+        "/api/notes",
+        json={"title": "Typed by hand", "content": "By a person"},
+        headers=auth_header(USER_ONE),
+    )
+
+    assert response.status_code == 201
+    assert response.get_json()["last_author_type"] == "user"
+
+
+def test_a_write_with_a_service_token_is_credited_to_the_assistant(
+    create_client: ClientFactory,
+):
+    client = create_client("test_repo")
+
+    response = client.post(
+        "/api/notes",
+        json={"title": "Written by the assistant", "content": "On your behalf"},
+        headers={**auth_header(USER_ONE), **service_header()},
+    )
+
+    assert response.status_code == 201
+    assert response.get_json()["last_author_type"] == "ai"
+
+
+def test_an_update_by_the_assistant_changes_the_author_of_a_user_note(
+    create_client: ClientFactory,
+):
+    client = create_client("test_repo")
+
+    response = client.put(
+        f"/api/notes/{READING_LIST}",
+        json={"content": "Rewritten by the assistant"},
+        headers={**auth_header(USER_ONE), **service_header()},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["last_author_type"] == "ai"
+
+
+def test_a_service_token_signed_with_the_user_key_is_refused(
+    create_client: ClientFactory,
+):
+    client = create_client("test_repo")
+
+    response = client.post(
+        "/api/notes",
+        json={"title": "Forged", "content": "Should not be stored"},
+        headers={**auth_header(USER_ONE), **service_header(secret_key=TEST_SECRET_KEY)},
+    )
+
+    assert response.status_code == 401
+
+    listed = client.get("/api/notes", headers=auth_header(USER_ONE)).get_json()
+    assert "Forged" not in [note["title"] for note in listed["notes"]]
+
+
+def test_a_service_token_from_an_unknown_subject_is_refused(
+    create_client: ClientFactory,
+):
+    client = create_client("test_repo")
+
+    response = client.post(
+        "/api/notes",
+        json={"title": "Wrong subject", "content": "Should not be stored"},
+        headers={
+            **auth_header(USER_ONE),
+            **service_header(subject="some-other-service"),
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_an_expired_service_token_is_refused(create_client: ClientFactory):
+    client = create_client("test_repo")
+
+    response = client.post(
+        "/api/notes",
+        json={"title": "Stale", "content": "Should not be stored"},
+        headers={
+            **auth_header(USER_ONE),
+            **service_header(lifetime=timedelta(seconds=-10)),
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_a_client_cannot_claim_authorship_in_the_body(create_client: ClientFactory):
+    client = create_client("test_repo")
+
+    response = client.post(
+        "/api/notes",
+        json={
+            "title": "Claiming to be the assistant",
+            "content": "Nice try",
+            "last_author_type": "ai",
+            "author_type": "ai",
+        },
+        headers=auth_header(USER_ONE),
+    )
+
+    assert response.status_code == 201
+    assert response.get_json()["last_author_type"] == "user"

@@ -3,7 +3,7 @@ from typing import Sequence
 
 from src.adapters.repository.notes_event_store import AbstractNoteEventStore
 from src.adapters.repository.notes_projection import AbstractNoteProjection, NoteOrder
-from src.domain.notes import Note, NoteID
+from src.domain.notes import AuthorType, Note, NoteID
 from src.domain.user import UserID
 
 
@@ -59,8 +59,13 @@ class NotesRepository:
         self._projection.upsert(note)
         note.clear_events()
 
-    def delete(self, note: Note, author_id: UserID) -> None:
+    def delete(
+        self,
+        note: Note,
+        author_id: UserID,
+        author_type: AuthorType = AuthorType.USER,
+    ) -> None:
         """Soft delete, recorded as an event rather than erased."""
-        note.delete(author_id=author_id)
+        note.delete(author_id=author_id, author_type=author_type)
 
         self.save(note)

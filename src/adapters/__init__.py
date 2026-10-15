@@ -1,10 +1,10 @@
 from .repository import AbstractUserRepository, SQLAlchemyUserRepository
-from .security import AbstractTokenService, JWTTokenService, PasswordService
+from .security import PasswordService, ServiceTokenService, TokenService
 
 __all__ = [
     "AbstractUserRepository",
-    "SQLAlchemyUserRepository",
-    "AbstractTokenService",
-    "JWTTokenService",
     "PasswordService",
+    "SQLAlchemyUserRepository",
+    "ServiceTokenService",
+    "TokenService",
 ]

@@ -25,7 +25,6 @@ class EventType(StrEnum):
 
 
 class AuthorType(StrEnum):
-    SYSTEM = "system"
     USER = "user"
     AI = "ai"
 

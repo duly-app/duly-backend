@@ -1,7 +1,13 @@
+"""Tokens identifying a user, signed with SIGNING_KEY."""
+
 import datetime
-from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import TypedDict
+
+from src.adapters.security import jwt_codec
+from src.adapters.security.jwt_codec import TokenPayload
+
+ACCESS_TOKEN_LIFETIME = datetime.timedelta(minutes=15)
+REFRESH_TOKEN_LIFETIME = datetime.timedelta(days=7)
 
 
 class TokenType(StrEnum):
@@ -9,33 +15,27 @@ class TokenType(StrEnum):
     REFRESH = "refresh"
 
 
-class TokenPayload(TypedDict):
-    sub: str
-    iat: datetime.datetime
-    exp: datetime.datetime
-    type: TokenType
-
-
-class AbstractTokenService(ABC):
+class TokenService:
     _secret_key: str
 
     def __init__(self, secret_key: str):
         self._secret_key = secret_key
 
-    @abstractmethod
     def create_access_token(self, user_id: str) -> str:
-        pass
+        return jwt_codec.encode(
+            user_id, self._secret_key, ACCESS_TOKEN_LIFETIME, TokenType.ACCESS
+        )
 
-    @abstractmethod
     def create_refresh_token(self, user_id: str) -> str:
-        pass
+        return jwt_codec.encode(
+            user_id, self._secret_key, REFRESH_TOKEN_LIFETIME, TokenType.REFRESH
+        )
 
-    @abstractmethod
-    def decode_token(self, token: str) -> TokenPayload | None:
-        pass
+    def decode_token(self, token: str) -> TokenPayload[TokenType] | None:
+        return jwt_codec.decode(token, self._secret_key, TokenType)
 
-    @classmethod
-    def get_token_from_header(cls, authorization_header: str | None) -> str | None:
+    @staticmethod
+    def get_token_from_header(authorization_header: str | None) -> str | None:
         if not authorization_header:
             return None
 

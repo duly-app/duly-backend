@@ -57,6 +57,7 @@ def create_app(config: dict | None = None) -> Flask:
         create_notes_bp(
             uow_factory=deps.uow_factory,
             token_service=deps.token_service,
+            service_token_service=deps.service_token_service,
         ),
         url_prefix="/api",
     )

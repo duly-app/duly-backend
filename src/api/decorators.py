@@ -4,7 +4,7 @@ from typing import Callable, ParamSpec
 from flask import g, request
 from flask.typing import ResponseReturnValue
 
-from src.adapters.security.token_service import AbstractTokenService, TokenType
+from src.adapters.security.token_service import TokenService, TokenType
 from src.domain.user import UserID
 
 P = ParamSpec("P")
@@ -12,7 +12,7 @@ P = ParamSpec("P")
 View = Callable[P, ResponseReturnValue]
 
 
-def authenticated_user_id(token_service: AbstractTokenService) -> UserID | None:
+def authenticated_user_id(token_service: TokenService) -> UserID | None:
     """Resolve the caller from a Bearer access token, or None if it is not usable."""
     token = token_service.get_token_from_header(request.headers.get("Authorization"))
     if not token:
@@ -29,7 +29,7 @@ def authenticated_user_id(token_service: AbstractTokenService) -> UserID | None:
 
 
 def auth_required(
-    token_service: AbstractTokenService,
+    token_service: TokenService,
 ) -> Callable[[View[P]], View[P]]:
     """Build a decorator that rejects unauthenticated requests and sets g.user_id."""
 

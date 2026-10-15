@@ -6,10 +6,14 @@ from flask import Blueprint, g, request
 from flask.typing import ResponseReturnValue
 
 from src.adapters.repository import NoteOrder
-from src.adapters.security.token_service import AbstractTokenService
+from src.adapters.security.service_token_service import (
+    SERVICE_TOKEN_HEADER,
+    ServiceTokenService,
+)
+from src.adapters.security.token_service import TokenService
 from src.api.decorators import auth_required
 from src.api.serializers import serialize_note
-from src.domain.notes import Note
+from src.domain.notes import AuthorType, Note
 from src.service.uow import UOWFactory
 
 DEFAULT_SEARCH_LIMIT = 20
@@ -55,10 +59,23 @@ class NotesData(TypedDict):
 
 def create_notes_bp(
     uow_factory: UOWFactory,
-    token_service: AbstractTokenService,
+    token_service: TokenService,
+    service_token_service: ServiceTokenService,
 ) -> Blueprint:
     bp = Blueprint("notes", __name__)
     require_auth = auth_required(token_service)
+
+    def author_type() -> AuthorType | None:
+        """Who to credit for a write, or None if the claim cannot be trusted."""
+        presented = request.headers.get(SERVICE_TOKEN_HEADER)
+
+        if presented is None:
+            return AuthorType.USER
+
+        if service_token_service.is_trusted_service(presented):
+            return AuthorType.AI
+
+        return None
 
     @bp.route("/notes", methods=["GET"])
     @require_auth
@@ -116,7 +133,14 @@ def create_notes_bp(
         if not title:
             return {"message": "A title is required"}, 400
 
-        note = Note.create(title=title, content=content, owner=g.user_id)
+        author = author_type()
+
+        if author is None:
+            return {"message": "Unauthorized"}, 401
+
+        note = Note.create(
+            title=title, content=content, owner=g.user_id, author_type=author
+        )
 
         with uow_factory() as uow:
             uow.notes.save(note)
@@ -138,6 +162,11 @@ def create_notes_bp(
         if title is None and content is None:
             return {"message": "A title or content is required"}, 400
 
+        author = author_type()
+
+        if author is None:
+            return {"message": "Unauthorized"}, 401
+
         with uow_factory() as uow:
             note = uow.notes.get_by_id(note_id)
 
@@ -153,6 +182,7 @@ def create_notes_bp(
                 title=new_title,
                 content=note.content if content is None else content,
                 author_id=g.user_id,
+                author_type=author,
             )
 
             uow.notes.save(note)
@@ -163,13 +193,18 @@ def create_notes_bp(
     @bp.route("/notes/<uuid:note_id>", methods=["DELETE"])
     @require_auth
     def delete_note(note_id: UUID) -> ResponseReturnValue:
+        author = author_type()
+
+        if author is None:
+            return {"message": "Unauthorized"}, 401
+
         with uow_factory() as uow:
             note = uow.notes.get_by_id(note_id)
 
             if note is None or note.owner != g.user_id:
                 return {"message": "Note not found"}, 404
 
-            uow.notes.delete(note, g.user_id)
+            uow.notes.delete(note, g.user_id, author)
             uow.commit()
 
         return "", 204
