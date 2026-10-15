@@ -10,7 +10,7 @@ from src.domain.notes_errors import (
     NoteTimestampError,
     NoUpdateDeletedNoteError,
 )
-from tests.unit.src.domain.model.conftest import NoteEventFactories
+from tests.unit.domain.model.conftest import NoteEventFactories
 
 OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
