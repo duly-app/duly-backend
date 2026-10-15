@@ -1,9 +1,11 @@
-from typing import NotRequired, TypedDict
+from datetime import datetime
+from typing import Literal, NotRequired, TypedDict
 from uuid import UUID
 
 from flask import Blueprint, g, request
 from flask.typing import ResponseReturnValue
 
+from src.adapters.repository import NoteOrder
 from src.adapters.security.token_service import AbstractTokenService
 from src.api.decorators import auth_required
 from src.api.serializers import serialize_note
@@ -12,6 +14,27 @@ from src.service.uow import UOWFactory
 
 DEFAULT_SEARCH_LIMIT = 20
 MAX_SEARCH_LIMIT = 50
+
+
+def _order() -> tuple[NoteOrder, bool]:
+    try:
+        order_by = NoteOrder(request.args.get("order_by", NoteOrder.LAST_UPDATED.value))
+    except ValueError:
+        order_by = NoteOrder.LAST_UPDATED
+
+    return order_by, request.args.get("direction", "desc").lower() != "asc"
+
+
+def _updated(name: Literal["updated_after", "updated_before"]) -> datetime | None:
+    value = request.args.get(name)
+
+    if not value:
+        return None
+
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
 
 
 def _limit() -> int:
@@ -40,8 +63,16 @@ def create_notes_bp(
     @bp.route("/notes", methods=["GET"])
     @require_auth
     def get_notes() -> ResponseReturnValue:
+        order_by, descending = _order()
+
         with uow_factory() as uow:
-            notes = uow.notes.get_by_owner(g.user_id)
+            notes = uow.notes.get_by_owner(
+                g.user_id,
+                order_by=order_by,
+                descending=descending,
+                updated_after=_updated("updated_after"),
+                updated_before=_updated("updated_before"),
+            )
 
             return {"notes": [serialize_note(note) for note in notes]}
 

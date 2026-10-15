@@ -1,9 +1,11 @@
 from dataclasses import replace
+from datetime import datetime
 from typing import Optional, Sequence
 
 from src.adapters.repository import (
     AbstractNoteEventStore,
     AbstractNoteProjection,
+    NoteOrder,
     NotesRepository,
 )
 from src.domain.notes import Note, NoteEvent, NoteID
@@ -62,15 +64,28 @@ class FakeNoteProjection(AbstractNoteProjection):
 
         return [note for note in self.get_by_owner(owner) if matches(note)][:limit]
 
-    def get_by_owner(self, owner: UserID) -> Sequence[Note]:
+    def get_by_owner(
+        self,
+        owner: UserID,
+        order_by: NoteOrder = NoteOrder.LAST_UPDATED,
+        descending: bool = True,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+    ) -> Sequence[Note]:
+        def in_window(note: Note) -> bool:
+            if updated_after is not None and note.last_updated < updated_after:
+                return False
+
+            return updated_before is None or note.last_updated < updated_before
+
         return sorted(
             (
                 note
                 for note in self._notes.values()
-                if note.owner == owner and not note.deleted
+                if note.owner == owner and not note.deleted and in_window(note)
             ),
-            key=lambda note: note.last_updated,
-            reverse=True,
+            key=lambda note: (getattr(note, order_by.value), str(note.id)),
+            reverse=descending,
         )
 
 
