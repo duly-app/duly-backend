@@ -1,4 +1,7 @@
 # Duly Backend
+
+[![Checks](https://github.com/duly-app/duly-backend/actions/workflows/pr-checks.yml/badge.svg?branch=main)](https://github.com/duly-app/duly-backend/actions/workflows/pr-checks.yml)
+
 This repository is the backend of the Duly app. It runs on Flask.
 
 ## Getting Started
