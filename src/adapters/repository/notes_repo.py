@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import Sequence
 
 from src.adapters.repository.notes_event_store import AbstractNoteEventStore
-from src.adapters.repository.notes_projection import AbstractNoteProjection
+from src.adapters.repository.notes_projection import AbstractNoteProjection, NoteOrder
 from src.domain.notes import Note, NoteID
 from src.domain.user import UserID
 
@@ -31,8 +32,21 @@ class NotesRepository:
 
         return note
 
-    def get_by_owner(self, owner: UserID) -> Sequence[Note]:
-        return self._projection.get_by_owner(owner)
+    def get_by_owner(
+        self,
+        owner: UserID,
+        order_by: NoteOrder = NoteOrder.LAST_UPDATED,
+        descending: bool = True,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+    ) -> Sequence[Note]:
+        return self._projection.get_by_owner(
+            owner,
+            order_by=order_by,
+            descending=descending,
+            updated_after=updated_after,
+            updated_before=updated_before,
+        )
 
     def search(self, owner: UserID, query: str, limit: int) -> Sequence[Note]:
         return self._projection.search(owner, query, limit)

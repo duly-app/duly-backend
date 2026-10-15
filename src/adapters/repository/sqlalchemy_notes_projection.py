@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Sequence
 
 from sqlalchemy import Row, func, select
@@ -5,9 +6,15 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from src.adapters.orm.notes import note_table
-from src.adapters.repository.notes_projection import AbstractNoteProjection
+from src.adapters.repository.notes_projection import AbstractNoteProjection, NoteOrder
 from src.domain.notes import AuthorType, Note
 from src.domain.user import UserID
+
+_ORDER_COLUMNS = {
+    NoteOrder.LAST_UPDATED: note_table.c.last_updated,
+    NoteOrder.CREATED_AT: note_table.c.created_at,
+    NoteOrder.TITLE: note_table.c.title,
+}
 
 
 def _to_values(note: Note) -> dict[str, Any]:
@@ -75,12 +82,34 @@ class SQLAlchemyNoteProjection(AbstractNoteProjection):
 
         return [_to_note(row) for row in rows]
 
-    def get_by_owner(self, owner: UserID) -> Sequence[Note]:
-        rows = self._session.execute(
+    def get_by_owner(
+        self,
+        owner: UserID,
+        order_by: NoteOrder = NoteOrder.LAST_UPDATED,
+        descending: bool = True,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+    ) -> Sequence[Note]:
+        column = _ORDER_COLUMNS[order_by]
+
+        statement = (
             select(note_table)
             .where(note_table.c.owner == owner)
             .where(note_table.c.deleted.is_(False))
-            .order_by(note_table.c.last_updated.desc())
-        ).all()
+        )
 
-        return [_to_note(row) for row in rows]
+        if updated_after is not None:
+            statement = statement.where(note_table.c.last_updated >= updated_after)
+
+        if updated_before is not None:
+            statement = statement.where(note_table.c.last_updated < updated_before)
+
+        return [
+            _to_note(row)
+            for row in self._session.execute(
+                statement.order_by(
+                    column.desc() if descending else column.asc(),
+                    note_table.c.id,
+                )
+            ).all()
+        ]
