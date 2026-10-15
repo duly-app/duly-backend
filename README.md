@@ -1,6 +1,7 @@
 # Duly Backend
 
 [![Checks](https://github.com/duly-app/duly-backend/actions/workflows/pr-checks.yml/badge.svg?branch=main)](https://github.com/duly-app/duly-backend/actions/workflows/pr-checks.yml)
+[![Coverage](https://raw.githubusercontent.com/duly-app/duly-backend/python-coverage-comment-action-data/badge.svg)](https://github.com/duly-app/duly-backend/tree/python-coverage-comment-action-data)
 
 This repository is the backend of the Duly app. It runs on Flask.
 
