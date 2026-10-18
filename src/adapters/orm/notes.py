@@ -1,3 +1,4 @@
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -14,6 +15,9 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 
 from src.adapters.orm.base import metadata
+
+#: multi-qa-MiniLM-L6-cos-v1 produces 384 dimensions.
+EMBEDDING_DIMENSIONS = 384
 
 note_event_table = Table(
     "note_events",
@@ -50,3 +54,13 @@ note_table = Table(
 )
 
 Index("ix_notes_search_vector", note_table.c.search_vector, postgresql_using="gin")
+
+
+note_embedding_table = Table(
+    "note_embeddings",
+    metadata,
+    Column("note_id", Uuid, primary_key=True),
+    Column("note_version", Integer, nullable=False),
+    Column("embedding", Vector(EMBEDDING_DIMENSIONS), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
