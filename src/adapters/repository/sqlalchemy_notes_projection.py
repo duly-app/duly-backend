@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Any, Sequence
 
-from sqlalchemy import Row, func, select
+from sqlalchemy import Row, delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.adapters.orm.notes import note_table
+from src.adapters.orm.notes import note_embedding_table, note_table
 from src.adapters.repository.notes_projection import AbstractNoteProjection, NoteOrder
 from src.domain.notes import AuthorType, Note
 from src.domain.user import UserID
@@ -63,6 +63,14 @@ class SQLAlchemyNoteProjection(AbstractNoteProjection):
         )
 
         self._session.execute(statement)
+
+        # Whatever embedding exists describes the text this write replaces, so
+        # it is now wrong. Dropping the row is how the sweeper is told to recompute
+        self._session.execute(
+            delete(note_embedding_table).where(
+                note_embedding_table.c.note_id == note.id
+            )
+        )
 
     def search(self, owner: UserID, query: str, limit: int) -> Sequence[Note]:
         # websearch_to_tsquery, not to_tsquery: this one
