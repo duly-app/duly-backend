@@ -1,8 +1,10 @@
 from src.app_factory import create_app
 from src.environment import EnvVar, load_env_vars
+from src.service.sweeper_thread import start_sweeper
 
 env_vars = load_env_vars()
 app = create_app(env_vars)
+start_sweeper(env_vars)
 
 
 if __name__ == "src.app":

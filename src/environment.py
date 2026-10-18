@@ -10,6 +10,11 @@ class EnvVar(StrEnum):
     DATABASE_URL = "DATABASE_URL"
     TEST_DATABASE_URL = "TEST_DATABASE_URL"
     FLASK_DEBUG = "FLASK_DEBUG"
+    EMBEDDER_URL = "EMBEDDER_URL"
+    EMBEDDER_KEY = "EMBEDDER_KEY"
+    # Set by Werkzeug in the reloader's child process, not by us
+    # Kept for dependency injection
+    WERKZEUG_RUN_MAIN = "WERKZEUG_RUN_MAIN"
 
 
 REQUIRED_ENV_VARS: tuple[EnvVar, ...] = (
