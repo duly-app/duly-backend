@@ -1,6 +1,5 @@
 """The sweeper fills in missing note embeddings, a batch at a time."""
 
-import logging
 import threading
 import time
 from contextlib import closing
@@ -9,8 +8,9 @@ from sqlalchemy.orm import sessionmaker
 
 from src.adapters.embedding import Embedder
 from src.adapters.repository.note_embeddings import fetch_pending_notes, store_embedding
+from src.logs import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 BATCH_SIZE = 32
 PERIOD_SECONDS = 30.0

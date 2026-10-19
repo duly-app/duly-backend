@@ -10,6 +10,7 @@ class EnvVar(StrEnum):
     DATABASE_URL = "DATABASE_URL"
     TEST_DATABASE_URL = "TEST_DATABASE_URL"
     FLASK_DEBUG = "FLASK_DEBUG"
+    LOG_LEVEL = "LOG_LEVEL"
     EMBEDDER_URL = "EMBEDDER_URL"
     EMBEDDER_KEY = "EMBEDDER_KEY"
     # Set by Werkzeug in the reloader's child process, not by us

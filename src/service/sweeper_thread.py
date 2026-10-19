@@ -1,14 +1,14 @@
 """Running the sweeper beside the web app."""
 
-import logging
 import threading
 
 from src.adapters.embedding import HTTPEmbedder
 from src.db import create_session_factory
 from src.environment import EnvVar
+from src.logs import get_logger
 from src.service.sweeper import run_sweeper
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 THREAD_NAME = "note-embedding-sweeper"
 
