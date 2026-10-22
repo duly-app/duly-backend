@@ -5,6 +5,7 @@ from uuid import UUID
 from flask import Blueprint, g, request
 from flask.typing import ResponseReturnValue
 
+from src.adapters.embedding import Embedder, EmbedderError
 from src.adapters.repository import NoteOrder
 from src.adapters.security.service_token_service import (
     SERVICE_TOKEN_HEADER,
@@ -61,18 +62,22 @@ def create_notes_bp(
     uow_factory: UOWFactory,
     token_service: TokenService,
     service_token_service: ServiceTokenService,
+    embedder: Embedder,
 ) -> Blueprint:
     bp = Blueprint("notes", __name__)
     require_auth = auth_required(token_service)
 
+    def is_service_call() -> bool:
+        return service_token_service.is_trusted_service(
+            request.headers.get(SERVICE_TOKEN_HEADER)
+        )
+
     def author_type() -> AuthorType | None:
         """Who to credit for a write, or None if the claim cannot be trusted."""
-        presented = request.headers.get(SERVICE_TOKEN_HEADER)
-
-        if presented is None:
+        if request.headers.get(SERVICE_TOKEN_HEADER) is None:
             return AuthorType.USER
 
-        if service_token_service.is_trusted_service(presented):
+        if is_service_call():
             return AuthorType.AI
 
         return None
@@ -105,6 +110,27 @@ def create_notes_bp(
 
         with uow_factory() as uow:
             notes = list(uow.notes.search(g.user_id, keyword, _limit()))
+
+        return {"notes": [serialize_note(note) for note in notes]}
+
+    @bp.route("/notes/search/semantic", methods=["GET"])
+    @require_auth
+    def search_notes_semantically() -> ResponseReturnValue:
+        if not is_service_call():
+            return {"message": "Unauthorized"}, 401
+
+        query = request.args.get("query", "").strip()
+
+        if not query:
+            return {"message": "A query is required"}, 400
+
+        try:
+            embedding = embedder.embed_query([query])[0]
+        except EmbedderError:
+            return {"message": "The embedding service is unavailable"}, 503
+
+        with uow_factory() as uow:
+            notes = uow.notes.search_by_vector(g.user_id, embedding, _limit())
 
         return {"notes": [serialize_note(note) for note in notes]}
 

@@ -17,11 +17,6 @@ def start_sweeper(
     config: dict[EnvVar, str], stop: threading.Event | None = None
 ) -> threading.Thread | None:
     """Start the sweeper in a daemon thread, if this process should run one."""
-    if not config.get(EnvVar.EMBEDDER_URL):
-        logger.info("EMBEDDER_URL is not set, so the sweeper will not run")
-
-        return None
-
     if not _is_serving_process(config):
         return None
 

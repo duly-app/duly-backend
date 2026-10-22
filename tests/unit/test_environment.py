@@ -7,6 +7,8 @@ CONFIGURED = {
     EnvVar.SERVICE_KEY: "service-key",
     EnvVar.REGISTRATION_CODE: "registration-code",
     EnvVar.DATABASE_URL: "postgresql+psycopg2://admin:password@localhost:5432/duly",
+    EnvVar.EMBEDDER_URL: "http://embedder-qa:8000",
+    EnvVar.EMBEDDER_KEY: "embedder-key",
 }
 
 
@@ -24,16 +26,6 @@ def test_rejects_a_service_key_equal_to_the_signing_key():
         verify_env_vars({**CONFIGURED, EnvVar.SERVICE_KEY: "signing-key"})
 
 
-def test_rejects_an_embedder_url_without_a_key():
+def test_rejects_a_missing_embedder_key():
     with pytest.raises(EnvironmentError, match="EMBEDDER_KEY"):
-        verify_env_vars({**CONFIGURED, EnvVar.EMBEDDER_URL: "http://embedder-qa:8000"})
-
-
-def test_accepts_an_embedder_url_with_a_key():
-    verify_env_vars(
-        {
-            **CONFIGURED,
-            EnvVar.EMBEDDER_URL: "http://embedder-qa:8000",
-            EnvVar.EMBEDDER_KEY: "embedder-key",
-        }
-    )
+        verify_env_vars({**CONFIGURED, EnvVar.EMBEDDER_KEY: ""})

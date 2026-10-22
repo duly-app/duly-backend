@@ -58,6 +58,7 @@ def create_app(config: dict | None = None) -> Flask:
             uow_factory=deps.uow_factory,
             token_service=deps.token_service,
             service_token_service=deps.service_token_service,
+            embedder=deps.embedder,
         ),
         url_prefix="/api",
     )

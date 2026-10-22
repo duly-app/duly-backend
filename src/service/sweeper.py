@@ -38,7 +38,7 @@ def sweep_once(
 
         return 0
 
-    embeddings = embedder.embed([note.text for note in notes])
+    embeddings = embedder.embed_documents([note.text for note in notes])
 
     with closing(session_factory()) as session:
         results = [

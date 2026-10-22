@@ -1,7 +1,7 @@
 import pytest
 import requests
 
-from src.adapters.embedding import HTTPEmbedder
+from src.adapters.embedding import EmbedderError, HTTPEmbedder
 from src.adapters.embedding.http_embedder import HEALTH_ATTEMPTS
 from tests.unit.adapters.embedding.fake_http_client import FakeHTTPClient, response
 
@@ -75,7 +75,7 @@ class TestEmbedding:
     def test_returns_one_embedding_per_text(self, waits: Waits):
         client = FakeHTTPClient(posts=TWO_EMBEDDINGS)
 
-        assert embedder(client, waits).embed(["first", "second"]) == [
+        assert embedder(client, waits).embed_documents(["first", "second"]) == [
             [0.1, 0.2],
             [0.3, 0.4],
         ]
@@ -85,7 +85,7 @@ class TestEmbedding:
         # endpoints because an asymmetric model treats them differently.
         client = FakeHTTPClient(posts=TWO_EMBEDDINGS)
 
-        embedder(client, waits).embed(["first", "second"])
+        embedder(client, waits).embed_documents(["first", "second"])
 
         assert client.post_calls[0]["url"] == f"{BASE_URL}/embed/documents"
         assert client.post_calls[0]["json"] == {"texts": ["first", "second"]}
@@ -93,7 +93,7 @@ class TestEmbedding:
     def test_presents_the_shared_secret(self, waits: Waits):
         client = FakeHTTPClient(posts=TWO_EMBEDDINGS)
 
-        embedder(client, waits).embed(["first", "second"])
+        embedder(client, waits).embed_documents(["first", "second"])
 
         assert client.post_calls[0]["headers"] == {"Authorization": f"Bearer {SECRET}"}
 
@@ -102,29 +102,40 @@ class TestEmbedding:
         # thread forever, and no further note would ever be embedded.
         client = FakeHTTPClient(posts=TWO_EMBEDDINGS)
 
-        embedder(client, waits, timeout=5.0).embed(["first", "second"])
+        embedder(client, waits, timeout=5.0).embed_documents(["first", "second"])
 
         assert client.post_calls[0]["timeout"] == 5.0
 
     def test_does_not_double_up_the_slash(self, waits: Waits):
         client = FakeHTTPClient(posts=TWO_EMBEDDINGS)
 
-        HTTPEmbedder(f"{BASE_URL}/", SECRET, client=client, sleep=waits).embed(
-            ["first", "second"]
-        )
+        HTTPEmbedder(
+            f"{BASE_URL}/", SECRET, client=client, sleep=waits
+        ).embed_documents(["first", "second"])
 
         assert client.post_calls[0]["url"] == f"{BASE_URL}/embed/documents"
 
-    def test_raises_when_the_secret_is_rejected(self, waits: Waits):
-        client = FakeHTTPClient(posts=response(status_code=401))
-
-        with pytest.raises(requests.HTTPError):
-            embedder(client, waits).embed(["first"])
-
-    def test_raises_when_the_service_returns_too_few_embeddings(self, waits: Waits):
-        # The caller pairs embeddings with notes by position, so a short
-        # response must fail rather than embed the wrong note.
+    def test_asks_the_query_side_for_a_query(self, waits: Waits):
         client = FakeHTTPClient(posts=response(payload={"embeddings": [[0.1, 0.2]]}))
 
-        with pytest.raises(ValueError):
-            embedder(client, waits).embed(["first", "second"])
+        embedder(client, waits).embed_query(["where did I park"])
+
+        assert client.post_calls[0]["url"] == f"{BASE_URL}/embed/query"
+
+    def test_a_rejected_secret_is_the_ports_own_failure(self, waits: Waits):
+        client = FakeHTTPClient(posts=response(status_code=401))
+
+        with pytest.raises(EmbedderError):
+            embedder(client, waits).embed_documents(["first"])
+
+    def test_an_unreachable_service_is_the_ports_own_failure(self, waits: Waits):
+        client = FakeHTTPClient(posts=REFUSED)
+
+        with pytest.raises(EmbedderError):
+            embedder(client, waits).embed_documents(["first"])
+
+    def test_raises_when_the_service_returns_too_few_embeddings(self, waits: Waits):
+        client = FakeHTTPClient(posts=response(payload={"embeddings": [[0.1, 0.2]]}))
+
+        with pytest.raises(EmbedderError):
+            embedder(client, waits).embed_documents(["first", "second"])

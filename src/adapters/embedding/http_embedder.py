@@ -3,7 +3,7 @@ from collections.abc import Callable, Sequence
 
 import requests
 
-from src.adapters.embedding.embedder import Embedder, Embedding
+from src.adapters.embedding.embedder import Embedder, EmbedderError, Embedding
 from src.adapters.embedding.http_client import HTTPClient
 from src.logs import get_logger
 
@@ -11,6 +11,7 @@ logger = get_logger(__name__)
 
 DEFAULT_TIMEOUT_SECONDS = 30.0
 DOCUMENTS_PATH = "/embed/documents"
+QUERIES_PATH = "/embed/query"
 HEALTH_PATH = "/health"
 
 HEALTH_TIMEOUT_SECONDS = 2.0
@@ -71,19 +72,28 @@ class HTTPEmbedder(Embedder):
 
         return response.ok
 
-    def embed(self, texts: Sequence[str]) -> list[Embedding]:
-        response = self._client.post(
-            f"{self._base_url}{DOCUMENTS_PATH}",
-            json={"texts": list(texts)},
-            headers={"Authorization": f"Bearer {self._secret}"},
-            timeout=self._timeout,
-        )
-        response.raise_for_status()
+    def embed_documents(self, texts: Sequence[str]) -> list[Embedding]:
+        return self._embed(DOCUMENTS_PATH, texts)
 
-        embeddings: list[Embedding] = response.json()["embeddings"]
+    def embed_query(self, texts: Sequence[str]) -> list[Embedding]:
+        return self._embed(QUERIES_PATH, texts)
+
+    def _embed(self, path: str, texts: Sequence[str]) -> list[Embedding]:
+        try:
+            response = self._client.post(
+                f"{self._base_url}{path}",
+                json={"texts": list(texts)},
+                headers={"Authorization": f"Bearer {self._secret}"},
+                timeout=self._timeout,
+            )
+            response.raise_for_status()
+
+            embeddings: list[Embedding] = response.json()["embeddings"]
+        except requests.RequestException as error:
+            raise EmbedderError(f"embedding request to {path} failed") from error
 
         if len(embeddings) != len(texts):
-            raise ValueError(
+            raise EmbedderError(
                 f"asked for {len(texts)} embeddings, got {len(embeddings)}"
             )
 

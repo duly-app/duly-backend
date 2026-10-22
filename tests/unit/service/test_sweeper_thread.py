@@ -18,15 +18,6 @@ def running_sweepers() -> list[str]:
     ]
 
 
-def test_no_sweeper_runs_without_an_embedder_url():
-    # The test suite and anyone running the app without the embedding service
-    # must not get a background thread polling the database.
-    config = {EnvVar.DATABASE_URL: CONFIGURED[EnvVar.DATABASE_URL]}
-
-    assert start_sweeper(config) is None
-    assert running_sweepers() == []
-
-
 def test_no_sweeper_runs_in_the_reloader_parent():
     # The parent only watches files, but it imports the app too, so without
     # the check the sweeper would run in both processes.

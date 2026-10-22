@@ -90,6 +90,25 @@ class SQLAlchemyNoteProjection(AbstractNoteProjection):
 
         return [_to_note(row) for row in rows]
 
+    def search_by_vector(
+        self, owner: UserID, embedding: Sequence[float], limit: int
+    ) -> Sequence[Note]:
+        distance = note_embedding_table.c.embedding.cosine_distance(list(embedding))
+
+        rows = self._session.execute(
+            select(note_table)
+            .join(
+                note_embedding_table,
+                note_embedding_table.c.note_id == note_table.c.id,
+            )
+            .where(note_table.c.owner == owner)
+            .where(note_table.c.deleted.is_(False))
+            .order_by(distance)
+            .limit(limit)
+        ).all()
+
+        return [_to_note(row) for row in rows]
+
     def get_by_owner(
         self,
         owner: UserID,

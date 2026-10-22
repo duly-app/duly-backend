@@ -23,6 +23,8 @@ REQUIRED_ENV_VARS: tuple[EnvVar, ...] = (
     EnvVar.SERVICE_KEY,
     EnvVar.REGISTRATION_CODE,
     EnvVar.DATABASE_URL,
+    EnvVar.EMBEDDER_URL,
+    EnvVar.EMBEDDER_KEY,
 )
 
 
@@ -44,6 +46,3 @@ def verify_env_vars(
 
     if signing_key and signing_key == env_vars.get(EnvVar.SERVICE_KEY):
         raise EnvironmentError("SERVICE_KEY must differ from SIGNING_KEY for security.")
-
-    if env_vars.get(EnvVar.EMBEDDER_URL) and not env_vars.get(EnvVar.EMBEDDER_KEY):
-        raise EnvironmentError("EMBEDDER_KEY is required when EMBEDDER_URL is set.")

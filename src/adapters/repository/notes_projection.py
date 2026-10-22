@@ -36,3 +36,9 @@ class AbstractNoteProjection(ABC):
     @abstractmethod
     def search(self, owner: UserID, query: str, limit: int) -> Sequence[Note]:
         """A user's notes matching a free-text query, best matches first."""
+
+    @abstractmethod
+    def search_by_vector(
+        self, owner: UserID, embedding: Sequence[float], limit: int
+    ) -> Sequence[Note]:
+        """A user's notes nearest the given vector, closest first."""
