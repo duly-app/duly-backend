@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from src.adapters.embedding import Embedder, HTTPEmbedder
 from src.adapters.orm import start_mappers
 from src.adapters.security.argon_password_service import ArgonPasswordService
 from src.adapters.security.password_service import PasswordService
@@ -16,6 +17,7 @@ class Dependencies:
     password_service: PasswordService
     token_service: TokenService
     service_token_service: ServiceTokenService
+    embedder: Embedder
 
 
 def bootstrap(config: dict) -> Dependencies:
@@ -28,7 +30,12 @@ def bootstrap(config: dict) -> Dependencies:
         service_token_service=ServiceTokenService(
             secret_key=config[EnvVar.SERVICE_KEY]
         ),
+        embedder=get_embedder(config),
     )
+
+
+def get_embedder(config: dict) -> Embedder:
+    return HTTPEmbedder(config[EnvVar.EMBEDDER_URL], config[EnvVar.EMBEDDER_KEY])
 
 
 def get_uow_factory(config: dict) -> UOWFactory:

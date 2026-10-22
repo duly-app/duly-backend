@@ -27,9 +27,11 @@ class FakeNoteEventStore(AbstractNoteEventStore):
 
 class FakeNoteProjection(AbstractNoteProjection):
     _notes: dict[NoteID, Note]
+    vector_searches: list[Sequence[float]]
 
     def __init__(self) -> None:
         self._notes = {}
+        self.vector_searches = []
 
     @classmethod
     def from_events(cls, events: Sequence[NoteEvent]) -> "FakeNoteProjection":
@@ -63,6 +65,13 @@ class FakeNoteProjection(AbstractNoteProjection):
             return all(word in haystack for word in words)
 
         return [note for note in self.get_by_owner(owner) if matches(note)][:limit]
+
+    def search_by_vector(
+        self, owner: UserID, embedding: Sequence[float], limit: int
+    ) -> Sequence[Note]:
+        self.vector_searches.append(list(embedding))
+
+        return self.get_by_owner(owner)[:limit]
 
     def get_by_owner(
         self,

@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Any, Sequence
 
-from sqlalchemy import Row, func, select
+from sqlalchemy import Row, delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.adapters.orm.notes import note_table
+from src.adapters.orm.notes import note_embedding_table, note_table
 from src.adapters.repository.notes_projection import AbstractNoteProjection, NoteOrder
 from src.domain.notes import AuthorType, Note
 from src.domain.user import UserID
@@ -64,6 +64,14 @@ class SQLAlchemyNoteProjection(AbstractNoteProjection):
 
         self._session.execute(statement)
 
+        # Whatever embedding exists describes the text this write replaces, so
+        # it is now wrong. Dropping the row is how the sweeper is told to recompute
+        self._session.execute(
+            delete(note_embedding_table).where(
+                note_embedding_table.c.note_id == note.id
+            )
+        )
+
     def search(self, owner: UserID, query: str, limit: int) -> Sequence[Note]:
         # websearch_to_tsquery, not to_tsquery: this one
         # accepts anything a person or a model would type, quotes and all.
@@ -77,6 +85,25 @@ class SQLAlchemyNoteProjection(AbstractNoteProjection):
             # Ranked, because the caller takes the first N: without an order
             # the best match can fall outside the limit and never be seen.
             .order_by(func.ts_rank(note_table.c.search_vector, tsquery).desc())
+            .limit(limit)
+        ).all()
+
+        return [_to_note(row) for row in rows]
+
+    def search_by_vector(
+        self, owner: UserID, embedding: Sequence[float], limit: int
+    ) -> Sequence[Note]:
+        distance = note_embedding_table.c.embedding.cosine_distance(list(embedding))
+
+        rows = self._session.execute(
+            select(note_table)
+            .join(
+                note_embedding_table,
+                note_embedding_table.c.note_id == note_table.c.id,
+            )
+            .where(note_table.c.owner == owner)
+            .where(note_table.c.deleted.is_(False))
+            .order_by(distance)
             .limit(limit)
         ).all()
 

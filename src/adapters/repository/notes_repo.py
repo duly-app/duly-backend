@@ -51,6 +51,11 @@ class NotesRepository:
     def search(self, owner: UserID, query: str, limit: int) -> Sequence[Note]:
         return self._projection.search(owner, query, limit)
 
+    def search_by_vector(
+        self, owner: UserID, embedding: Sequence[float], limit: int
+    ) -> Sequence[Note]:
+        return self._projection.search_by_vector(owner, embedding, limit)
+
     def save(self, note: Note) -> None:
         if not note.events:
             return

@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 
 import pytest
-from sqlalchemy import Connection, Engine, create_engine
+from sqlalchemy import Connection, Engine, create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.adapters.orm import metadata, role_table, start_mappers
@@ -27,6 +27,10 @@ def postgres_engine() -> Iterator[Engine]:
     start_mappers()
 
     engine = create_engine(TEST_DATABASE_URL)
+
+    with engine.begin() as connection:
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+
     metadata.create_all(engine)
 
     with engine.begin() as connection:

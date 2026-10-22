@@ -4,11 +4,13 @@ import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 
+from src.adapters.embedding import Embedder
 from src.adapters.repository import AbstractUserRepository, NotesRepository
 from src.adapters.security.service_token_service import ServiceTokenService
 from src.adapters.security.token_service import TokenService
 from src.api.routes.notes import create_notes_bp
 from src.service.uow import AbstractUOW
+from tests.integration.fakes.fake_embedder import FakeEmbedder
 from tests.integration.fakes.fake_notes_repo import create_fake_notes_repo
 from tests.integration.fakes.fake_uow import FakeUOW
 from tests.integration.fakes.fake_user_repo import FakeUserRepository
@@ -43,7 +45,9 @@ class UOWFactory(Protocol):
 
 
 class ClientFactory(Protocol):
-    def __call__(self, db_name: str) -> FlaskClient: ...
+    def __call__(
+        self, db_name: str, embedder: Embedder | None = None
+    ) -> FlaskClient: ...
 
 
 @pytest.fixture
@@ -86,7 +90,7 @@ def create_uow() -> UOWFactory:
 
 @pytest.fixture
 def create_client() -> ClientFactory:
-    def _client_factory(db_name: str) -> FlaskClient:
+    def _client_factory(db_name: str, embedder: Embedder | None = None) -> FlaskClient:
         users, note_events = parse_db(db_name)
         uow = FakeUOW(users=users, note_events=note_events)
 
@@ -96,6 +100,7 @@ def create_client() -> ClientFactory:
                 uow_factory=lambda: uow,
                 token_service=TokenService(TEST_SECRET_KEY),
                 service_token_service=ServiceTokenService(TEST_SERVICE_KEY),
+                embedder=embedder or FakeEmbedder(),
             ),
             url_prefix="/api",
         )
