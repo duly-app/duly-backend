@@ -29,9 +29,7 @@ def start_sweeper(
         target=run_sweeper,
         args=(
             create_session_factory(config[EnvVar.DATABASE_URL]),
-            HTTPEmbedder(
-                config[EnvVar.EMBEDDER_URL], config.get(EnvVar.EMBEDDER_KEY, "")
-            ),
+            HTTPEmbedder(config[EnvVar.EMBEDDER_URL], config[EnvVar.EMBEDDER_KEY]),
         ),
         kwargs={"stop": stop},
         name=THREAD_NAME,

@@ -147,6 +147,23 @@ class TestSweepOnce:
         assert sweep_once(session_factory, embedder) == 0
         assert embedder.calls == []
 
+    def test_it_leaves_the_notes_alone_when_the_embedder_is_not_ready(
+        self, session_factory: sessionmaker[Session]
+    ):
+        with session_factory() as session:
+            waiting = note("Sourdough", "Fed the starter.")
+            write(session, waiting)
+            session.commit()
+
+        embedder = FakeEmbedder(ready=False)
+
+        assert sweep_once(session_factory, embedder) == 0
+        assert embedder.calls == []
+
+        with session_factory() as session:
+            assert stored_embedding(session, waiting.id) is None
+            assert fetch_pending_notes(session, limit=10)
+
     def test_a_note_edited_while_being_embedded_keeps_no_stale_vector(
         self, session_factory: sessionmaker[Session]
     ):

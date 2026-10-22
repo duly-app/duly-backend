@@ -30,16 +30,24 @@ def sweep_once(
     if not notes:
         return 0
 
+    if not embedder.is_ready():
+        logger.info(
+            "embedder is unavailable, so the sweep stands down",
+            extra={"pending": len(notes)},
+        )
+
+        return 0
+
     embeddings = embedder.embed([note.text for note in notes])
 
     with closing(session_factory()) as session:
-        stored = sum(
+        results = [
             store_embedding(session, note.id, note.version, embedding)
-            for note, embedding in zip(notes, embeddings)
-        )
+            for note, embedding in zip(notes, embeddings, strict=True)
+        ]
         session.commit()
 
-    return stored
+    return results.count(True)
 
 
 def run_sweeper(
